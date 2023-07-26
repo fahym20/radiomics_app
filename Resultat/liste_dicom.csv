@@ -1,0 +1,4 @@
+AnonymizationID;PatientID;PatientName;PatientBirthDate;Sex;StudyDate;InstitutionName;Modality;Manufacturer;ManufacturerModelName;SeriesInstanceUID;SeriesDescription;SeriesOutputFolder
+test1;123;1 3 6 1 4 1 9328 50 1 0109;;;20000101.0;;CT;GE MEDICAL SYSTEMS;LightSpeed16;1.3.6.1.4.1.9328.50.1.53398;;
+12;;;;;;;;;;;;
+14;;;;;;;;;;;;
