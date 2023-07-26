@@ -6,9 +6,8 @@ import shutil
 import six
 import copy
 import difflib
-import dicom2nifti
+# import dicom2nifti
 import streamlit as st
-import yaml
 from pathlib import Path
 import pydicom as pdc
 import pandas as pd
