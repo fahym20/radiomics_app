@@ -9,7 +9,7 @@ import difflib
 # import dicom2nifti
 import streamlit as st
 from pathlib import Path
-import pydicom as pdc
+# import pydicom as pdc
 import pandas as pd
 from collections import OrderedDict
 from SimpleITK import ImageFileReader, ImageSeriesReader
