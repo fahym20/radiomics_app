@@ -49,134 +49,134 @@ st.markdown(
 # Exportation du fichier liste_segmentations.csv résumant les segmentations trouvées
 def export_list_segmentations(dicom_input, dbjson_file, data, output):
 
-# Début du chronométrage
-startTime = time.time()
+    # Début du chronométrage
+    startTime = time.time()
 
-# Création ou remise à zéro du fichier de log
-open('..\log_export.txt', 'w', encoding="utf-8").close()
+    # Création ou remise à zéro du fichier de log
+    open('..\log_export.txt', 'w', encoding="utf-8").close()
 
-# Vérification : l'adresse du fichier db.json est-elle bien spécifié ?
-if len(dicom_input) == 0:
-    st.write("Dossier DICOM non trouvé, vous devez sélectionner le dossier parent des fichiers DICOM (Étape 2)")
-    return
-elif dbjson_file is None:
-    st.write("Fichier db.json non trouvé, vous devez sélectionner un fichier db.json valide (Étape 2)")
-    return
+    # Vérification : l'adresse du fichier db.json est-elle bien spécifié ?
+    if len(dicom_input) == 0:
+        st.write("Dossier DICOM non trouvé, vous devez sélectionner le dossier parent des fichiers DICOM (Étape 2)")
+        return
+    elif dbjson_file is None:
+        st.write("Fichier db.json non trouvé, vous devez sélectionner un fichier db.json valide (Étape 2)")
+        return
 
-# Initialisation de la barre de progression
-progress_bar = st.progress(0)
-ProgbarSet = 0
-# Nombre de segmentations :
+    # Initialisation de la barre de progression
+    progress_bar = st.progress(0)
+    ProgbarSet = 0
+    # Nombre de segmentations :
 
-segNumber = trouver_longueur_dictionnaire(data)
+    segNumber = trouver_longueur_dictionnaire(data)
 
-segNumber = 0.1 if segNumber == 0 else segNumber
-
-
-# Extraction des données du fichier db.json
-listSegmentations = {}
-for p, v in data.items():
-    try:
-        for annot in v["annotations"] :
-            try:
-                numAno = p.replace(" ", "")
-                annotId = annot["id"] if len(annot["id"]) != 0 else "_"
-                for seg in annot["segmentations"]:
-                    try:
-                        maskName = seg["id"] if len(seg["id"]) != 0 else "_"
-                        offFileName = seg["url"].split('/')[-1]
-                        imRefId = seg["image_ref_id"]
-                        imgList = [img["url"] for img in v["images"] if img["id"] == imRefId][0]
-                        seriesDescription = [img["comments"] for img in v["images"] if img["id"] == imRefId][0]
-                        seriesOutPut = "_".join(re.sub(r"[^a-zA-Z0-9]", " ", seriesDescription).upper().split())
-
-                        listSegmentations[p, annotId, offFileName] = [numAno, annotId, offFileName, maskName, imRefId, seriesDescription, seriesOutPut, imgList]
-
-                        ProgbarSet = 1 / segNumber
-                        progress_bar.progress(ProgbarSet)
-                        time.sleep(0.1)
-
-                    except Exception as g:
-                        with open('..\log_export.txt', 'a', encoding="utf-8") as log_export:
-                            log_export.write(f"Failed to read {seg}: {g} \n")
-                            st.write('Failed to read', seg, ':', g)
-                        ProgbarSet = 1 / segNumber
-                        progress_bar.progress(ProgbarSet)
-                        time.sleep(0.1)
-                        print(f"g : {ProgBarSet}")
-                        continue
-
-            except Exception as f:
-                with open('..\log_export.txt', 'a', encoding="utf-8") as log_export:
-                    log_export.write(f"Failed to read {annot}: {f} \n")
-                    st.write('Failed to read', annot, ':', f)
-                ProgbarSet += 1 / segNumber
-                progress_bar.progress(ProgbarSet)
-                time.sleep(0.1)
-                continue
-
-    except Exception as e:
-        with open('..\log_export.txt', 'a', encoding="utf-8") as log_export:
-            log_export.write(f"Failed to read {p}: {e} \n")
-            st.write('Failed to read', p, ':', e)
-        ProgbarSet += 1 / segNumber
-        progress_bar.progress(ProgbarSet)
-        time.sleep(0.1)
-        continue
-
-# Ajout de SeriesInstanceUID :
-listDcm = []
-for (dirPath, _, fileNames) in os.walk(dicom_input):
-    listDcm += [os.path.join(dirPath, filename).replace("\\\\", "/").replace("\\", "/") for filename in fileNames if (".dcm" in filename) or (is_file_a_dicom(os.path.join(dirPath, filename)) == True)]
-
-for k, v in listSegmentations.items():
-    try:
-        img1 = v[-1][0]
-        img1Path = [i for i in listDcm if img1 in i][0] if any(img1 in i for i in listDcm) else "NA"
-        if (img1Path != "NA") and (os.path.exists(img1Path)):
-            file_reader = ImageFileReader()
-            file_reader.SetFileName(img1Path)
-            file_reader.ReadImageInformation()
-            series_UID = file_reader.GetMetaData('0020|000e')
-            seriesInstanceUID_formatted = series_UID.replace(".", "")[-1:2:-2]
-        else:
-            seriesInstanceUID_formatted = ""
-        v.append(f"s{seriesInstanceUID_formatted}")     
-    except Exception as e:
-        with open('..\log_export.txt', 'a', encoding="utf-8") as log_export:
-            log_export.write(f"Failed to add SeriesInstanceUID for {k} \n")
-            st.write("Failed to add SeriesInstanceUID for", k)
-        ProgBarSet += 1 / segNumber
-        progress_bar.progress(ProgbarSet)
-        time.sleep(0.1)
-        continue            
-
-file_path = os.path.join(output, 'liste_segmentations.csv')
+    segNumber = 0.1 if segNumber == 0 else segNumber
 
 
-# Enregistrement du fichier csv contenant la liste des segmentations
-with open(file_path, mode='w', newline='', encoding="utf-8") as csv_file:
-    col_names = ["AnonymizationID",
-                "AnnotID",
-                "OffFileName",
-                "MaskName",
-                "ImageRefId",
-                "SeriesDescription",
-                "SeriesOutput",
-                "ImgList",
-                "SeriesInstanceUID"
-                ]
-    writer = csv.writer(csv_file, delimiter=';')
+    # Extraction des données du fichier db.json
+    listSegmentations = {}
+    for p, v in data.items():
+        try:
+            for annot in v["annotations"] :
+                try:
+                    numAno = p.replace(" ", "")
+                    annotId = annot["id"] if len(annot["id"]) != 0 else "_"
+                    for seg in annot["segmentations"]:
+                        try:
+                            maskName = seg["id"] if len(seg["id"]) != 0 else "_"
+                            offFileName = seg["url"].split('/')[-1]
+                            imRefId = seg["image_ref_id"]
+                            imgList = [img["url"] for img in v["images"] if img["id"] == imRefId][0]
+                            seriesDescription = [img["comments"] for img in v["images"] if img["id"] == imRefId][0]
+                            seriesOutPut = "_".join(re.sub(r"[^a-zA-Z0-9]", " ", seriesDescription).upper().split())
 
-    writer.writerow(col_names)
-    for data in listSegmentations.values():
-        writer.writerow(data)
+                            listSegmentations[p, annotId, offFileName] = [numAno, annotId, offFileName, maskName, imRefId, seriesDescription, seriesOutPut, imgList]
 
-# Fin d'exécution de la fonction
-progress_bar.progress(100)
-endTime = time.time()
-executionDuration = int(endTime - startTime)
-st.write(f'Opération terminée en {executionDuration} secondes.')
+                            ProgbarSet = 1 / segNumber
+                            progress_bar.progress(ProgbarSet)
+                            time.sleep(0.1)
+
+                        except Exception as g:
+                            with open('..\log_export.txt', 'a', encoding="utf-8") as log_export:
+                                log_export.write(f"Failed to read {seg}: {g} \n")
+                                st.write('Failed to read', seg, ':', g)
+                            ProgbarSet = 1 / segNumber
+                            progress_bar.progress(ProgbarSet)
+                            time.sleep(0.1)
+                            print(f"g : {ProgBarSet}")
+                            continue
+
+                except Exception as f:
+                    with open('..\log_export.txt', 'a', encoding="utf-8") as log_export:
+                        log_export.write(f"Failed to read {annot}: {f} \n")
+                        st.write('Failed to read', annot, ':', f)
+                    ProgbarSet += 1 / segNumber
+                    progress_bar.progress(ProgbarSet)
+                    time.sleep(0.1)
+                    continue
+
+        except Exception as e:
+            with open('..\log_export.txt', 'a', encoding="utf-8") as log_export:
+                log_export.write(f"Failed to read {p}: {e} \n")
+                st.write('Failed to read', p, ':', e)
+            ProgbarSet += 1 / segNumber
+            progress_bar.progress(ProgbarSet)
+            time.sleep(0.1)
+            continue
+
+    # Ajout de SeriesInstanceUID :
+    listDcm = []
+    for (dirPath, _, fileNames) in os.walk(dicom_input):
+        listDcm += [os.path.join(dirPath, filename).replace("\\\\", "/").replace("\\", "/") for filename in fileNames if (".dcm" in filename) or (is_file_a_dicom(os.path.join(dirPath, filename)) == True)]
+    
+    for k, v in listSegmentations.items():
+        try:
+            img1 = v[-1][0]
+            img1Path = [i for i in listDcm if img1 in i][0] if any(img1 in i for i in listDcm) else "NA"
+            if (img1Path != "NA") and (os.path.exists(img1Path)):
+                file_reader = ImageFileReader()
+                file_reader.SetFileName(img1Path)
+                file_reader.ReadImageInformation()
+                series_UID = file_reader.GetMetaData('0020|000e')
+                seriesInstanceUID_formatted = series_UID.replace(".", "")[-1:2:-2]
+            else:
+                seriesInstanceUID_formatted = ""
+            v.append(f"s{seriesInstanceUID_formatted}")     
+        except Exception as e:
+            with open('..\log_export.txt', 'a', encoding="utf-8") as log_export:
+                log_export.write(f"Failed to add SeriesInstanceUID for {k} \n")
+                st.write("Failed to add SeriesInstanceUID for", k)
+            ProgBarSet += 1 / segNumber
+            progress_bar.progress(ProgbarSet)
+            time.sleep(0.1)
+            continue            
+
+    file_path = os.path.join(output, 'liste_segmentations.csv')
+
+
+    # Enregistrement du fichier csv contenant la liste des segmentations
+    with open(file_path, mode='w', newline='', encoding="utf-8") as csv_file:
+        col_names = ["AnonymizationID",
+                    "AnnotID",
+                    "OffFileName",
+                    "MaskName",
+                    "ImageRefId",
+                    "SeriesDescription",
+                    "SeriesOutput",
+                    "ImgList",
+                    "SeriesInstanceUID"
+                    ]
+        writer = csv.writer(csv_file, delimiter=';')
+
+        writer.writerow(col_names)
+        for data in listSegmentations.values():
+            writer.writerow(data)
+
+    # Fin d'exécution de la fonction
+    progress_bar.progress(100)
+    endTime = time.time()
+    executionDuration = int(endTime - startTime)
+    st.write(f'Opération terminée en {executionDuration} secondes.')
 
 
 
