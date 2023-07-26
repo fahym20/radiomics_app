@@ -4,24 +4,24 @@ import time
 import json
 import shutil
 import six
-import copy
-import difflib
-import dicom2nifti
+# import copy
+# import difflib
+# import dicom2nifti
 import streamlit as st
-import yaml
-from pathlib import Path
-import pydicom as pdc
-import pandas as pd
-from collections import OrderedDict
-from SimpleITK import ImageFileReader, ImageSeriesReader
-from matplotlib.backends.backend_pdf import PdfPages
-import matplotlib.pyplot as plt
-import numpy as np
-import nibabel as nb
-from radiomics import featureextractor, getFeatureClasses
+# import yaml
+# from pathlib import Path
+# import pydicom as pdc
+# import pandas as pd
+# from collections import OrderedDict
+# from SimpleITK import ImageFileReader, ImageSeriesReader
+# from matplotlib.backends.backend_pdf import PdfPages
+# import matplotlib.pyplot as plt
+# import numpy as np
+# import nibabel as nb
+# from radiomics import featureextractor, getFeatureClasses
 
-from anonymizator_functions import *
-from niftiConvertor_functions import *
+# from anonymizator_functions import *
+# from niftiConvertor_functions import *
 
 
 st.set_page_config(
